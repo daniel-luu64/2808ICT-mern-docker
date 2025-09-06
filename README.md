@@ -1,106 +1,97 @@
-# Basic MERN App
+# 2808ICT MERN Docker Setup
 
-![my picture](https://doananhtingithub40102.github.io/MyData/mern/mypicture.png)
+This project demonstrates how to containerize a MERN application (MongoDB, Express, React, Node.js) for deployment on AWS EC2.  
+Each part of the stack (frontend, backend, MongoDB) runs in its own container.
 
-A full-stack [MERN](https://www.mongodb.com/mern-stack) application for managing information of employees.
+---
 
-## About the project
+## Backend
 
-This is a full-stack MERN application that manages the basic information of employees. The app uses an employee database from the MongoDB Atlas database and then display it using a React.
-
-## Tech Stack
-
-**Client:** React, Bootstrap
-
-**Server:** NodeJS, ExpressJS
-
-**Database:** MongoDB
-
-## Run Locally
-
-Clone the project
-
+### Build and run the backend container:
 ```bash
-  git clone https://github.com/doananhtingithub40102/mern-app.git
+docker build -t mern-backend ./server
+
+docker run -d --name backend \
+  --restart unless-stopped \
+  --env-file ./server/.env \
+  --add-host=host.docker.internal:host-gateway \
+  -p 3000:3000 mern-backend
 ```
 
-Go to the project directory
+Verify backend is working:
+- Visit: `http://<EC2_PUBLIC_IP>:3000/` → shows **App is running**
+- Visit: `http://<EC2_PUBLIC_IP>:3000/health` → returns `{ "ok": true }`
 
+---
+
+## Frontend
+
+### Build and run the frontend container:
 ```bash
-  cd mern-app
+docker build -t mern-frontend \
+  --build-arg REACT_APP_API_URL="http://<EC2_PUBLIC_IP>:3000" ./client
+
+docker run -d --name frontend -p 80:80 mern-frontend
 ```
 
-Create an Atlas URI connection parameter in `server/.env` with your Atlas URI:
-```
-ATLAS_URI="mongodb+srv://<username>:<password>@cluster0.6cgz2s1.mongodb.net/?retryWrites=true&w=majority"
-PORT=5000
+Verify frontend is working:
+- Visit: `http://<EC2_PUBLIC_IP>/`
+- React app should load and connect to backend API.
+
+---
+
+## 🗄 MongoDB (to be added by teammate)
+
+The backend expects a MongoDB connection string.  
+Once MongoDB is containerized or provided via MongoDB Atlas, add the following to the `.env` file:
+
+```ini
+MONGO_URI=mongodb://mongo:27017/appdb?authSource=admin
+MONGO_DB=appdb
 ```
 
-Create an hostname on server enviroment variable in `client/.env` with your hostname on server:
-```
-REACT_APP_YOUR_HOSTNAME="http://localhost:5000"
+---
+
+## Environment Variables
+
+### Backend `.env` example
+```ini
+NODE_ENV=production
+PORT=3000
+CORS_ORIGIN=http://<EC2_PUBLIC_IP>
+MONGO_URI=   # leave empty until DB is ready
+MONGO_DB=appdb
 ```
 
-Install dependencies
-
+### Frontend build-time variable
 ```bash
-  cd server
-  npm install
+--build-arg REACT_APP_API_URL="http://<EC2_PUBLIC_IP>:3000"
 ```
 
-```bash
-  cd client
-  npm install
-```
+---
 
-Start the server
+## Development Notes
 
-```bash
-  cd server
-  node server.js
-```
-Start the Client
+- `.gitignore` excludes `.env` and `node_modules`
+- Each feature should be pushed to its own branch:
+  - `feature/frontend-docker`
+  - `feature/backend-docker`
+  - `feature/mongodb-docker` (pending)
 
-```bash
-  cd client
-  npm start
-```
-  
+---
 
-## Features in the project
+## Team Workflow
 
-- The user can **create** the information of a employee, and managing it.
+1. Each teammate works on a **feature branch**.  
+2. Push changes to GitHub.  
+3. Open a **Pull Request (PR)** for review.  
+4. Once approved, merge into **main**.  
 
-- **Displaying** the information of employees, including the name, position, and level of the employee.
+---
 
-- Includes **Update** and **Delete** actions.
+## Health Check Endpoints
 
-## Learn More
+- **Backend Root** → `GET /` → `"App is running"`  
+- **Backend Health** → `GET /health` → `{ "ok": true }`  
 
-**FrontEnd**
-
-* To learn React, check out the [React documentation](https://reactjs.org/).
-
-* You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-* Get started with [Bootstrap](https://www.w3schools.com/bootstrap5/index.php), the world's most popular framework for building responsive, mobile-first websites.
-
-**BackEnd**
-
-* [Node.js Tutorial](https://www.w3schools.com/nodejs/default.asp)
-
-* [ExpressJS Tutorial](https://www.tutorialspoint.com/expressjs/index.htm)
-
-**Database**
-
-* [MongoDB Tutorial](https://www.w3schools.com/mongodb/)
-
-* Follow the [Get Started with MongoDB Atlas](https://www.mongodb.com/docs/atlas/getting-started/) guide to create an Atlas cluter, connecting to it, and loading your data.
-
-**Fullstack**
-
-* Learn all about the [MERN stack](https://www.mongodb.com/languages/mern-stack-tutorial) in this step-by-step guide on how to use it by developing a simple CRUD application from scratch.
-
-## Live app
-
-<a href="https://employee-manager-tindoan-xu3i.onrender.com/">Live fullstack MERN app</a>
+---
