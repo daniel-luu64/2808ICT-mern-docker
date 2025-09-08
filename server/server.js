@@ -12,10 +12,17 @@ app.get("/", function(req, res) {
     res.send("App is running")
 })
 
-dbo.connectToMongoDB(function (error) {
-    if (error) throw error
+app.get("/health",(req, res) => {
+  res.status(200).json({ ok:true })
+})
 
-    app.listen(port, () => {
+dbo.connectToMongoDB(function (error) {
+    if (error) {
+      console.error("MongoDB connection failed:", error.message);
+      console.log("Starting server")
+    }
+
+    app.listen(port, "0.0.0.0", () => {
         console.log("Server is running on port: " + port)
     })
 })
