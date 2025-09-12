@@ -1,50 +1,71 @@
-version: '3.8'
+version: "3.8"
+
+name: mern
 
 services:
-  # MongoDB Database  
   mongo:
-    build:
-      context: ./mongo/database
-      dockerfile: Dockerfile
+    image: mongo:6
     container_name: mern_mongodb
-    ports:
-      - "27017:27017"
+    restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin123
       MONGO_INITDB_DATABASE: appdb
     volumes:
       - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
     networks:
       - mern_network
 
-  # Backend API
   backend:
     build:
       context: ./server
       dockerfile: Dockerfile
     container_name: mern_backend
-    ports:
-      - "3000:3000"
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
     environment:
       NODE_ENV: production
-      PORT: 3000
-      MONGO_URI: mongodb://mongo:27017/appdb?authSource=admin
-    depends_on:
-      - mongo
+      PORT: "3000"
+      ATLAS_URI: mongodb://admin:admin123@mongo:27017/appdb?authSource=admin
+      MONGO_URI: mongodb://admin:admin123@mongo:27017/appdb?authSource=admin
+      MONGODB_URI: mongodb://admin:admin123@mongo:27017/appdb?authSource=admin
+      MONGO_DB: appdb
+      CORS_ORIGIN: "http://${PUBLIC_IP}"
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('net').connect(3000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))\""]
+      interval: 5s
+      timeout: 3s
+      retries: 30
     networks:
       - mern_network
 
-  # Frontend
   frontend:
     build:
       context: ./client
       dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: "http://${PUBLIC_IP}:3000"
     container_name: mern_frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
     ports:
       - "80:80"
-    depends_on:
-      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost/"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
     networks:
       - mern_network
 
