@@ -1,47 +1,51 @@
 version: '3.8'
 
+# Created container for MongoDB, this is used for the database service providing persistent data storage for the application. running on port 27017, and stores all the application including employees records.
+
 services:
   # MongoDB Database  
   mongo:
     build:
       context: .
-      dockerfile: ./database/Dockerfile
-    container_name: mern_mongodb
+      dockerfile: ./database/Dockerfile  # MongoDB Dockerfile
+    container_name: mern_mongodb  # MongoDB container name
     ports:
       - "27017:27017" # private MongoDB
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin123
-      MONGO_INITDB_DATABASE: employees
+      MONGO_INITDB_ROOT_USERNAME: admin # MongoDB root username
+      MONGO_INITDB_ROOT_PASSWORD: admin123 # MongoDB root password
+      MONGO_INITDB_DATABASE: employees # MongoDB database name
     volumes:
-      - mongodb_data:/data/db
-      - ./init-scripts:/docker-entrypoint-initdb.d
+      - mongodb_data:/data/db # MongoDB data volume
+      - ./init-scripts:/docker-entrypoint-initdb.d # MongoDB initialization scripts
     networks:
-      - mern_network
+      - mern_network # MongoDB network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"] # MongoDB health check
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
+
+
   # Backend API
   backend:
     build:
-      context: ./server
-      dockerfile: Dockerfile
-    container_name: mern_backend
+      context: ./server # Backend Dockerfile
+      dockerfile: Dockerfile # Backend Dockerfile
+    container_name: mern_backend # Backend container name
     ports:
       - "3000:3000" # private HTTP
     environment:
-      NODE_ENV: production
-      PORT: 3000
+      NODE_ENV: production # Backend environment
+      PORT: 3000 # Backend port
       MONGO_URI: mongodb://admin:admin123@mongo:27017/employees?authSource=admin # private MongoDB
     depends_on:
-      mongo:
+      mongo: # MongoDB dependency
         condition: service_healthy
     networks:
-      - mern_network
+      - mern_network # Backend network
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
       interval: 30s
@@ -49,58 +53,59 @@ services:
       retries: 3
       start_period: 40s
 
+
   # Frontend
   frontend:
     build:
-      context: ./client
-      dockerfile: Dockerfile
+      context: ./client # Frontend Dockerfile
+      dockerfile: Dockerfile # Frontend Dockerfile
       args:
         REACT_APP_API_URL: http://localhost:3000 # private HTTP
-    container_name: mern_frontend
+    container_name: mern_frontend # Frontend container name
     ports:
       - "3001:80" # public HTTP
     depends_on:
-      backend:
+      backend: # Backend dependency
         condition: service_healthy
     networks:
-      - mern_network
+      - mern_network # Frontend network
 
   # Nginx Proxy
   nginx:
-    image: nginx:1.27-alpine
+    image: nginx:1.27-alpine # Nginx image
     container_name: mern_nginx
     depends_on:
-      - frontend
-      - backend
+      - frontend # Frontend dependency
+      - backend # Backend dependency
     ports:
       - "80:80"               # public HTTP
     networks: 
-      - mern_network
+      - mern_network # Nginx network
     restart: unless-stopped
 
   # Mongo Express (Database Admin UI)
   mongo-express:
     image: mongo-express:1.0.0
-    container_name: mern_mongo_express
+    container_name: mern_mongo_express # Mongo Express container name
     ports:
-      - "8081:8081"
+      - "8081:8081" # Mongo Express port
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: admin123
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin # Mongo Express admin username
+      ME_CONFIG_MONGODB_ADMINPASSWORD: admin123 # Mongo Express admin password
       ME_CONFIG_MONGODB_URL: mongodb://admin:admin123@mongo:27017/
-      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_SERVER: mongo # Mongo Express server
       ME_CONFIG_BASICAUTH_USERNAME: admin
       ME_CONFIG_BASICAUTH_PASSWORD: admin123
     depends_on:
-      mongo:
+      mongo: # MongoDB dependency
         condition: service_healthy
     networks:
-      - mern_network
+      - mern_network # Mongo Express network
 
 volumes:
-  mongodb_data:
+  mongodb_data: # MongoDB data volume
 
 networks:
-  mern_network:
+  mern_network: # MERN network
     driver: bridge
     
