@@ -1,0 +1,54 @@
+# k8s/mongo.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-pvc
+  namespace: mern
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-deploy
+  namespace: mern
+  labels: { app: mongo }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: mongo } }
+  template:
+    metadata: { labels: { app: mongo } }
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:7
+          ports: [{ containerPort: 27017 }]
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom: { secretKeyRef: { name: mongo-auth, key: username } }
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom: { secretKeyRef: { name: mongo-auth, key: password } }
+            - name: MONGO_INITDB_DATABASE
+              value: employees
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: mongo-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-svc
+  namespace: mern
+spec:
+  selector: { app: mongo }
+  ports:
+    - name: mongo
+      port: 27017
+      targetPort: 27017

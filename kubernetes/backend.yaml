@@ -1,0 +1,40 @@
+# k8s/backend.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deploy
+  namespace: mern
+  labels: { app: backend }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: backend } }
+  template:
+    metadata: { labels: { app: backend } }
+    spec:
+      containers:
+        - name: backend
+          image: 2808ict-mern-docker-backend:latest   # use your built image name
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 3000 }]
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            - name: MONGO_URI
+              value: "mongodb://admin:admin123@mongo-svc:27017/employees?authSource=admin"
+            - name: CORS_ORIGIN
+              value: "https://$(HOST)"
+          envFrom: []  # (optionally use configmap if you want)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-svc
+  namespace: mern
+spec:
+  selector: { app: backend }
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
