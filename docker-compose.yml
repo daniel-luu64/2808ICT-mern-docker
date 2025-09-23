@@ -27,8 +27,6 @@ services:
       retries: 3
       start_period: 40s
 
-
-
   # Backend API
   backend:
     build:
@@ -53,14 +51,13 @@ services:
       retries: 3
       start_period: 40s
 
-
   # Frontend
   frontend:
     build:
       context: ./client # Frontend Dockerfile
       dockerfile: Dockerfile # Frontend Dockerfile
       args:
-        REACT_APP_API_URL: http://localhost:3000 # private HTTP
+        REACT_APP_API_URL: "https;//54.210.182.216/api" # private HTTP
     container_name: mern_frontend # Frontend container name
     ports:
       - "3001:80" # public HTTP
@@ -79,9 +76,13 @@ services:
       - backend # Backend dependency
     ports:
       - "80:80"               # public HTTP
-    networks: 
+      - "443:443"             # public HTTPS
+    networks:
       - mern_network # Nginx network
     restart: unless-stopped
+    volumes:
+      - ./deploy/nginx/certs:/etc/nginx/certs:ro
+      - ./deploy/nginx/conf.d:/etc/nginx/conf.d:ro
 
   # Mongo Express (Database Admin UI)
   mongo-express:
@@ -108,4 +109,3 @@ volumes:
 networks:
   mern_network: # MERN network
     driver: bridge
-    
