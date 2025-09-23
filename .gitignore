@@ -7,3 +7,5 @@ minikube-linux-amd64
 # Optional: Ignore OS/editor temp files
 .DS_Store
 *.swp
+kubectl
+minikube-linux-amd64
