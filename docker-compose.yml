@@ -27,8 +27,6 @@ services:
       retries: 3
       start_period: 40s
 
-
-
   # Backend API
   backend:
     build:
@@ -41,9 +39,12 @@ services:
       NODE_ENV: production # Backend environment
       PORT: 3000 # Backend port
       MONGO_URI: mongodb://admin:admin123@mongo:27017/employees?authSource=admin # private MongoDB
+      CORS_ORIGIN: "https://3.94.165.8"
     depends_on:
       mongo: # MongoDB dependency
         condition: service_healthy
+    expose:
+      - "3000"
     networks:
       - mern_network # Backend network
     healthcheck:
@@ -53,14 +54,13 @@ services:
       retries: 3
       start_period: 40s
 
-
   # Frontend
   frontend:
     build:
       context: ./client # Frontend Dockerfile
       dockerfile: Dockerfile # Frontend Dockerfile
       args:
-        REACT_APP_API_URL: http://localhost:3000 # private HTTP
+        REACT_APP_API_URL: "https://3.94.165.8/api" # private HTTP
     container_name: mern_frontend # Frontend container name
     ports:
       - "3001:80" # public HTTP
@@ -77,11 +77,16 @@ services:
     depends_on:
       - frontend # Frontend dependency
       - backend # Backend dependency
+      - mongo-express
     ports:
       - "80:80"               # public HTTP
-    networks: 
+      - "443:443"
+    networks:
       - mern_network # Nginx network
     restart: unless-stopped
+    volumes:
+      - ./deploy/nginx/certs:/etc/nginx/certs:ro
+      - ./deploy/nginx/conf.d:/etc/nginx/conf.d:ro
 
   # Mongo Express (Database Admin UI)
   mongo-express:
@@ -93,12 +98,14 @@ services:
       ME_CONFIG_MONGODB_ADMINUSERNAME: admin # Mongo Express admin username
       ME_CONFIG_MONGODB_ADMINPASSWORD: admin123 # Mongo Express admin password
       ME_CONFIG_MONGODB_URL: mongodb://admin:admin123@mongo:27017/
-      ME_CONFIG_MONGODB_SERVER: mongo # Mongo Express server
       ME_CONFIG_BASICAUTH_USERNAME: admin
       ME_CONFIG_BASICAUTH_PASSWORD: admin123
+      ME_CONFIG_SITE_BASEURL: /mongo-express/
     depends_on:
       mongo: # MongoDB dependency
         condition: service_healthy
+    expose:
+      - "8081"
     networks:
       - mern_network # Mongo Express network
 
@@ -108,4 +115,3 @@ volumes:
 networks:
   mern_network: # MERN network
     driver: bridge
-    
