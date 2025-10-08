@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Created container for MongoDB, this is used for the database service providing persistent data storage for the application. running on port 27017, and stores all the application including employees records.
 
 services:
@@ -26,7 +24,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
+      
   # Backend API
   backend:
     build:
@@ -60,7 +58,7 @@ services:
       context: ./client # Frontend Dockerfile
       dockerfile: Dockerfile # Frontend Dockerfile
       args:
-        REACT_APP_API_URL: "https://3.94.165.8/api" # private HTTP
+        REACT_APP_API_URL: "http://localhost:3000" # local backend
     container_name: mern_frontend # Frontend container name
     ports:
       - "3001:80" # public HTTP
@@ -69,24 +67,6 @@ services:
         condition: service_healthy
     networks:
       - mern_network # Frontend network
-
-  # Nginx Proxy
-  nginx:
-    image: nginx:1.27-alpine # Nginx image
-    container_name: mern_nginx
-    depends_on:
-      - frontend # Frontend dependency
-      - backend # Backend dependency
-      - mongo-express
-    ports:
-      - "80:80"               # public HTTP
-      - "443:443"
-    networks:
-      - mern_network # Nginx network
-    restart: unless-stopped
-    volumes:
-      - ./deploy/nginx/certs:/etc/nginx/certs:ro
-      - ./deploy/nginx/conf.d:/etc/nginx/conf.d:ro
 
   # Mongo Express (Database Admin UI)
   mongo-express:
@@ -108,6 +88,24 @@ services:
       - "8081"
     networks:
       - mern_network # Mongo Express network
+
+  # Nginx Proxy
+  nginx:
+    image: nginx:1.27-alpine # Nginx image
+    container_name: mern_nginx
+    depends_on:
+      - frontend # Frontend dependency
+      - backend # Backend dependency
+      - mongo-express
+    ports:
+      - "80:80"               # public HTTP
+      - "443:443"
+    networks:
+      - mern_network # Nginx network
+    restart: unless-stopped
+    volumes:
+      - ./deploy/nginx/certs:/etc/nginx/certs:ro
+      - ./deploy/nginx/conf.d:/etc/nginx/conf.d:ro
 
 volumes:
   mongodb_data: # MongoDB data volume
