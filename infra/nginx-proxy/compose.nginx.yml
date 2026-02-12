@@ -1,0 +1,15 @@
+version: '3.9'
+services:
+  proxy:
+    image: nginx:latest
+    container_name: proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx-proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx-proxy/certs:/etc/nginx/certs:ro
+    depends_on:
+      - frontend
+      - backend
+      - mongo-express

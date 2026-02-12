@@ -1,0 +1,40 @@
+# k8s/mongo-express.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: me-deploy
+  namespace: mern
+  labels: { app: mongo-express }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: mongo-express } }
+  template:
+    metadata: { labels: { app: mongo-express } }
+    spec:
+      containers:
+        - name: mongo-express
+          image: mongo-express:1.0.0
+          ports: [{ containerPort: 8081 }]
+          env:
+            - name: ME_CONFIG_MONGODB_SERVER
+              value: mongo-svc
+            - name: ME_CONFIG_MONGODB_ADMINUSERNAME
+              valueFrom: { secretKeyRef: { name: mongo-auth, key: username } }
+            - name: ME_CONFIG_MONGODB_ADMINPASSWORD
+              valueFrom: { secretKeyRef: { name: mongo-auth, key: password } }
+            - name: ME_CONFIG_BASICAUTH_USERNAME
+              valueFrom: { secretKeyRef: { name: me-basic-auth, key: user } }
+            - name: ME_CONFIG_BASICAUTH_PASSWORD
+              valueFrom: { secretKeyRef: { name: me-basic-auth, key: pass } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: me-svc
+  namespace: mern
+spec:
+  selector: { app: mongo-express }
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081

@@ -1,0 +1,30 @@
+# k8s/frontend.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deploy
+  namespace: mern
+  labels: { app: frontend }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: frontend } }
+  template:
+    metadata: { labels: { app: frontend } }
+    spec:
+      containers:
+        - name: frontend
+          image: 2808ict-mern-docker-frontend:latest  # your built image name
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 80 }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+  namespace: mern
+spec:
+  selector: { app: frontend }
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
